@@ -1,16 +1,14 @@
-require 'active_support/core_ext/string/strip'
-require 'big_checkbox'
 require 'erector'
+require 'big_checkbox'
 require 'erector_scss'
-require 'i18n'
 require 'markdown_renderer'
 require 'titleizer'
+require 'active_support/core_ext/string/strip'
+require 'erb'
+
+Dir[File.join(__dir__, 'site_extensions', '*.rb')].each { |f| require f }
 
 class Step < Erector::Widget
-  external :style, <<-CSS
-    @import url(/css/step.css);
-  CSS
-
   needs :src
   needs :doc_path
   needs :container_page_name => false
@@ -19,6 +17,12 @@ class Step < Erector::Widget
   def initialize options
     super
     @step_stack = options[:step_stack] || []
+
+    site = File.basename(File.dirname(@doc_path))
+    module_name = site.split('-').map(&:capitalize).join
+    if StepExtensions.const_defined?(module_name)
+      extend StepExtensions.const_get(module_name)
+    end
   end
 
   def next_step_number
@@ -45,28 +49,37 @@ class Step < Erector::Widget
   def insert file
     # todo: unify into common 'find & process a document file' unit
     dir = File.dirname(@doc_path)
-    path = File.join(dir, "_#{file}.step")  # todo: other file types
-    src = File.read(path)
-    step = Step.new(src: src, doc_path: path, container_page_name: page_name, step_stack: @step_stack)
-    widget step
+
+    possible_paths = ['step', 'md'].each_with_object([]) do |ext, paths|
+      paths << File.join(dir, "#{file}.#{ext}")
+      path_dir, path_file = file.match(%r{(.*/)?(.*)}).captures
+      paths << File.join(dir, "#{path_dir}_#{path_file}.#{ext}")
+    end
+
+    possible_paths.each do |path|
+      next unless File.exist?(path)
+
+      src = File.read(path)
+      if path.end_with?('.step')
+        step = Step.new(src: src, doc_path: path, container_page_name: page_name, step_stack: @step_stack)
+        return widget step
+      else
+        return message src
+      end
+    end
+
+    raise "Couldn't find a partial for #{file}! Searched in #{possible_paths}"
   end
 
   ## steps
 
-  @@header_sections = {
-    steps: 'header_sections.steps',
-    explanation: 'header_sections.explanation',
-    overview: 'header_sections.overview',
-    discussion: 'header_sections.discussion',
-    hints: 'header_sections.hints',
-    tools_and_references: 'header_sections.tools_and_references',
-    requirements: 'header_sections.requirements',
-  }
-
-  @@header_sections.each do |type, header|
-    define_method type do |&block|
+  %w[
+    steps explanation overview discussion hints challenge 
+    tools_and_references requirements
+  ].each do |type|
+    define_method type.to_sym do |&block|
       div :class => type do
-        h1(I18n.t(header))
+        h1 I18n.t(type, :scope => "header_section")
         blockquote do
           block.call if block
         end
@@ -76,47 +89,44 @@ class Step < Erector::Widget
 
   def step name = nil, options = {}
     num = next_step_number
-    a(:name => "step#{current_anchor_num}")
-    a(:name => options[:anchor_name]) if options[:anchor_name]
-    div :class => "step", :title => name do
+    a(name: "step#{current_anchor_num}")
+    a(name: options[:anchor_name]) if options[:anchor_name]
+    div class: "step" do
       h1 do
         widget BigCheckbox
-        prefix "#{ I18n.t 'step' } #{ num }" + (!name.nil? ? ': ' : '')
+        prefix I18n.t("general.step_title", :num => num) +
+              (!name.nil? ? I18n.t("general.step_title_suffix") : '')
         text name
       end
       _render_inner_content &Proc.new if block_given?
     end
   end
 
-  def link name
+  def link name, options = {}
+    options = {caption: I18n.t("captions.link")}.merge(options)
     p :class => "link" do
-      text "#{ I18n.t 'link_text' } "
+      text options[:caption]
+      text " "
       simple_link(name, class: :link)
     end
   end
+  alias_method :link_without_toc, :link
 
-  def link_without_toc name
-    link name
-  end
-
-  def simple_link name, options={}
-    require 'uri'
-    hash = URI.escape '#'
-    href = name + "?back=#{page_name}#{hash}step#{current_anchor_num}"
+  def simple_link name, options={}, &blk
+    link_options = {href: _escaped(name)}.merge(options)
     if block_given?
-      a({:href => href}.merge(options)) do
-        yield
-      end
+      a link_options, &blk
     else
-      a Titleizer.title_for_page(name), {:href => href}.merge(options)
+      a Titleizer.title_for_page(name), link_options
     end
   end
 
   def next_step name
     div :class => "step next_step" do
       h1 do
-        prefix "#{ I18n.t 'next_step' }"
+        prefix I18n.t("general.next_step")
       end
+      # FIXME: Translate with i18n. Currently it is hard to get site_name.
       link name
     end
   end
@@ -130,7 +140,7 @@ class Step < Erector::Widget
     num = next_step_number
     a(:name => "step#{current_anchor_num}")
     h1 :class => "option" do
-      span "#{ I18n.t 'option' } #{num}: "
+      span I18n.t("general.option", :num => num)
       text name
     end
     _render_inner_content &Proc.new if block_given?
@@ -155,7 +165,7 @@ class Step < Erector::Widget
 
   def verify text = nil
     div :class=> "verify" do
-      h1 "#{ I18n.t 'verify' } #{text}"
+      h1 I18n.t("general.verify", :text => text)
       blockquote do
         yield
       end
@@ -164,23 +174,16 @@ class Step < Erector::Widget
 
   def goals
     div :class => "goals" do
-      h1 "#{ I18n.t 'goals' }"
+      h1 I18n.t("general.goals")
       ul do
         yield
       end
     end
   end
 
-  alias_method :goal, :li
-
-  def site_desc site_name, description
-    div class: 'site-desc' do
-      h1 do
-        a href: "/#{site_name}" do
-          text Titleizer.title_for_page(site_name)
-        end
-      end
-      div raw(md2html description)
+  def goal *args
+    li do
+      message *args
     end
   end
 
@@ -205,6 +208,7 @@ class Step < Erector::Widget
       end
     end
   end
+  alias_method :markdown, :message
 
   def important text = nil, &block
     message text, class: "important vertical-centerer", inner_class: "vertically-centered", icon: "exclamation-circle", &block
@@ -214,15 +218,25 @@ class Step < Erector::Widget
     message text, class: "tip vertical-centerer", inner_class: "vertically-centered", icon: "info-circle", &block
   end
 
+  def discussion_box(title, content)
+    div class: "discussion_box" do
+      h4 "Discussion: #{title}"
+      hr
+      message content
+    end
+  end
+
+  def error_box(error)
+    div class: "error_box" do
+      h4 "Error! Woo!!!"
+      p error
+    end
+  end
+
   ## special
 
-  TERMINAL_CAPTION = "#{ I18n.t 'terminal_caption' }"
-  IRB_CAPTION = "#{ I18n.t 'irb_caption'}"
-  RESULT_CAPTION = "#{ I18n.t 'result_caption' }"
-  FUZZY_RESULT_CAPTION = "#{ I18n.t 'fuzzy_result_caption' }"
-
   def console(commands)
-    console_with_message(TERMINAL_CAPTION, commands)
+    console_with_message(I18n.t('captions.terminal'), commands)
   end
 
   def console_with_message(message, commands)
@@ -236,23 +250,28 @@ class Step < Erector::Widget
     console_with_message("", commands)
   end
 
+  def source_code_with_message(text, *args)
+    message text
+    source_code(*args)
+  end
+
   def irb msg
     div :class => "console" do
-      span IRB_CAPTION
+      span I18n.t("captions.irb")
       pre msg
     end
   end
 
   def type_in_file filename, msg
     div do
-      span "#{ I18n.t 'type_in_file' } #{ filename }:"
+      span I18n.t("general.type_in_file", :filename => filename)
       source_code :ruby, msg
     end
   end
 
   def further_reading
     div :class => "further-reading" do
-      h1 "#{ I18n.t 'further_reading' }"
+      h1 I18n.t("general.further_reading")
       blockquote do
         yield
       end
@@ -261,7 +280,7 @@ class Step < Erector::Widget
 
   def result text
     div :class => "result" do
-      span RESULT_CAPTION
+      span I18n.t("captions.result")
       pre text.strip_heredoc
     end
   end
@@ -269,17 +288,17 @@ class Step < Erector::Widget
   def fuzzy_result fuzzed_text
     fuzzed_text = fuzzed_text.strip_heredoc
     div :class => "result fuzzy-result" do
-      span FUZZY_RESULT_CAPTION
+      span I18n.t("captions.fuzzy_result")
       remaining_text = fuzzed_text
       pre do
-        while match = remaining_text.match(/(.*?){FUZZY}(.*?){\/FUZZY}(.*)/m)
+        while match = remaining_text.match(/(.*?)\{FUZZY}(.*?)\{\/FUZZY}(.*)/m)
           text match[1]
           span match[2], :class => 'fuzzy-lightened'
           remaining_text = match[3]
         end
         text remaining_text
       end
-      div "#{ I18n.t 'greyed_out_text' }", :class => 'fuzzy-hint'
+      div I18n.t("general.fuzzy_hint"), :class => 'fuzzy-hint'
     end
   end
 
@@ -295,29 +314,14 @@ class Step < Erector::Widget
   end
 
   def md2html text
-    MarkdownRenderer.render(text)
-  end
-
-  def model_diagram options
-    header = options.delete(:header)
-    fields = options.delete(:fields)
-    table(options.merge(class: 'model-diagram')) do
-      thead do
-        tr do
-          th header
-        end
-      end
-      tbody do
-        fields.each do |field|
-          tr do
-            td field
-          end
-        end
-      end
-    end
+    MARKDOWN_RENDERER.render(text)
   end
 
   private
+
+  def _escaped str
+    ERB::Util.u(str)
+  end
 
   def _render_inner_content
     blockquote do

@@ -1,26 +1,31 @@
-source 'https://rubygems.org'
+source "https://rubygems.org"
 
-gem 'activesupport', '~> 3.2.0'
-gem 'coderay'
-gem 'deckrb', '~> 0.5.2'
-gem 'erector', '~> 0.9.0'
-gem 'eventmachine', '~>1.0.3'
-gem 'i18n'
-gem 'nokogiri'
+ruby '2.2.0'
+
+gem 'activesupport'
+gem "erector", "~> 0.10.0"
+gem "sinatra", "~> 1.4.0"
+gem "sinatra-contrib", "~> 1.4.0"
+gem "nokogiri"
+gem "thin"
+gem "eventmachine", "~>1.0.3"
 gem 'rack-codehighlighter'
-gem 'redcarpet'
-gem 'sass'
-gem 'sinatra', '~> 1.3.0'
-gem 'thin'
+gem 'coderay'
+gem "deckrb", "~> 0.5.2"
+gem "sass"
+gem "redcarpet"
+gem "rubyzip"
+gem "i18n", "~> 0.7"
+gem 'font-awesome-sass'
+gem 'bootstrap-sass'
+gem 'jquery-cdn'
+gem 'sprockets'
 
 group :development do
-  gem 'files', '~> 0.3.0'
-  gem 'git-duet'
-  gem 'pry'
-  gem 'rake'
-  gem 'rack-test'
+  gem "rspec"
+  gem "rerun"
+  gem "rake"
+  gem "rack-test"
+  gem "files", "~> 0.3.0"
   gem 'rb-fsevent', :platform => :ruby
-  gem 'rerun'
-  gem 'rspec'
-  gem 'wrong', '~> 0.7.0'
 end

@@ -4,23 +4,18 @@ require "site_index"
 require 'erector_scss'
 require 'titleizer'
 require 'html5_page'
+require 'flags'
+require 'erb'
 
 class DocPage < Html5Page
   needs :site_name, :doc_title, :doc_path, :page_name, :src, :locale
   needs :back => nil
   attr_reader :site_name, :doc_title, :page_name, :src
 
-  def self.css_path
-    here = File.expand_path File.dirname(__FILE__)
-    File.expand_path "#{here}/../public/css"
-  end
-
   def head_content
     title page_title
-    script :src => "/jquery.min.js"
-    script :src => "/js/bootstrap.min.js"
-    script :src => "/js/doc_page.js"
-    link   :href => "/font-awesome/css/font-awesome.min.css", :rel => "stylesheet"
+    script :src => "/assets/application.js"
+    link   :href => "/assets/application.css", :rel => "stylesheet"
   end
 
   def site_title
@@ -30,22 +25,6 @@ class DocPage < Html5Page
   def page_title
     "#{doc_title} - #{site_title}"
   end
-
-  external :style, scss(File.read("#{css_path}/header.scss"))
-  external :style, scss(File.read("#{css_path}/toc.scss"))
-  external :style, scss(File.read("#{css_path}/doc_page.scss"))
-
-  # this is how to load the Open Sans font when we know we're online
-  # external :style,  <<-CSS
-  # @import url(http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,700);
-  # CSS
-
-  # but this is to load the Open Sans font when we might be offline
-  external :style,  <<-CSS
-  @import url(/fonts/opensans.css);
-  @import url(/fonts/aleo.css);
-  @import url(/css/coderay.css);
-  CSS
 
   class TopLink < Erector::Widget
     needs :name, :href, :toggle_selector => nil, :extraclass => nil
@@ -72,8 +51,8 @@ class DocPage < Html5Page
   def top_links
     [
       TopLink.new(name: "toc", href: "#", extraclass: 'show-when-small', toggle_selector: '#table_of_contents'),
-      TopLink.new(name: "src", href: src_url),
-      TopLink.new(name: "git", href: git_url),
+      TopLink.new(name: "src", href: src_url, extraclass: 'hidden-sm'),
+      TopLink.new(name: "git", href: git_url, extraclass: 'hidden-sm'),
     ]
   end
 
@@ -95,6 +74,7 @@ class DocPage < Html5Page
         }
       }
       ul(class: "navbar-nav nav") {
+        widget Flags, locale: @locale
 
         li(class: "dropdown") {
           a("sites", href: "#", class: "dropdown-toggle", "data-toggle" => "dropdown")
@@ -110,34 +90,50 @@ class DocPage < Html5Page
     widget Contents, locale: @locale, site_name: site_name, page_name: page_name
 
     main {
+      before_title
       h1 doc_title, class: "doc_title"
       div(class: :doc) {
         doc_content
       }
       if @back
+        # Encode page name and fragment name separately so that
+        # the fragment indicator '#' won't be escaped.
+        page_name, fragment = @back.split('#')
+        url_components = [ERB::Util.u(page_name)]
+        url_components << ERB::Util.u(fragment) if fragment
+        back_url = url_components.join('#')
+
         div.back {
-          text "#{ I18n.t 'back_to' } "
-          a(class: "back", href: @back) do
-            text Titleizer.title_for_page(@back.split('#').first)
+          text I18n.t("general.back_to") + " "
+          a(class: "back", href: back_url) do
+            text Titleizer.title_for_page(page_name)
           end
         }
       end
     }
 
     footer {
-      p "#{ I18n.t 'footer.maintained_by' }"
       p do
-        text "#{ I18n.t 'footer.find_something'}"
-        a "#{ I18n.t 'footer.pull_request' } ", href: "#{ I18n.t 'footer.pull_request_link' }"
-        text "#{ I18n.t 'footer.or' } "
-        a "#{ I18n.t 'footer.note' } ", href: "#{ I18n.t 'footer.issues_link' }"
-        text "#{ I18n.t 'footer.github_issues' }"
+        text "Going through this curriculum on your own? Get help at "
+        a "Code Newbie", href: "http://discourse.codenewbie.org/t/railsbridge-curriculum-questions/594/4"
+        text ", where RailsBridge volunteers can answer your questions."
       end
       p do
-        text "#{ I18n.t 'footer.source' } "
-        url "#{ I18n.t 'footer.source_link' }"
+        text "If you have a suggestion for improving the docs, please make a "
+        a "pull request ", href: "https://github.com/railsbridge/docs"
+        text "or "
+        a "drop us a note ", href: "https://github.com/railsbridge/docs/issues/new"
+        text "via GitHub Issues (no technical knowledge required)."
+      end
+      p do
+        text "Source: "
+        url "https://github.com/railsbridge/docs"
       end
     }
+  end
+
+  def before_title
+    # placeholder for subclass override
   end
 
 end

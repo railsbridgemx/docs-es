@@ -1,12 +1,14 @@
 message "This is a set of step-by-step instructions for installing Ruby, Rails, and other important tools on Mac, Windows, or Linux computers. Originally developed for the [Railsbridge Workshops](http://railsbridge.org), it is a community-supported open-source documentation project. If you want to contribute, click the [git] link at the top-right corner of any page and submit your change on GitHub."
 
+message  "**You'll repeat all these steps tomorrow, but more slowly so you can better understand what's going on under the hood.** Today we just want to check that everything's set up and ready for tomorrow."
+
 step "Prepare for the Installfest" do
   message <<-MARKDOWN
 
 
 ## You must bring:
 
-* **Your laptop.** You need to have a working wifi connection and a browser.
+* **Your laptop.** You need to have a working wifi connection, a browser and an email account you can readily access.
   * If you have a choice between a Mac and a Windows laptop, please bring the Mac.
   * Linux is an acceptable alternative, but the Installfest is only tested on Ubuntu.
 * **Power cord for your laptop**
@@ -36,14 +38,15 @@ end
 step "Read This Overview" do
   message <<-MARKDOWN
 
-You will be installing the following tools:
+Here's a list of tools you'll be installing. As you go through the workshop, we'll explain what each one is for and how to use it.
 
-* Ruby
-* Rails
-* Git
-* Heroku
-* Sublime Text 2 (or some editor)
-* Various useful "ruby gems", including...
+* **Ruby**. A programming language.
+* **Rails**. A framework for making web applications with Ruby. It does a lot of the setting up work for you and creates a model-view-controller structure for your web application. We'll go into more detail about that later.
+* **Git**. A revision or source control system. It creates a repository, which is a complete history of your programming changes, so you can undo changes and roll back to previous versions of your work if something has gone wrong.
+* **GitHub**. (optional)
+* **Heroku**. An application server, which hosts your application during development. This allows you to get your application online and interact with it from any browser, instead of just on your local machine.
+* **Sublime Text 2** (or [some other editor](editors)). To write programs in Ruby, you need a text editor to create, edit and save Ruby files.
+* Various useful "**Ruby gems**". Ruby gems are useful bits of Ruby code that someone has created for reuse, so you don't have to write it yourself. Including...
   * bundler
   * sqlite
 

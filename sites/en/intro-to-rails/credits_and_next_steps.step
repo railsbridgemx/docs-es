@@ -3,11 +3,14 @@ Guess what?  _**You're done!!!**_ Congratulations, you just \"finished\" your fi
 
 (They're never _really_ ever finished... have fun tweaking it!)
 
+You get another sticker! :)
+
 # Extra Credit
 
 If you got all the way through Suggestotron with some time to spare, here's some extra stuff you can try:
 
 * Add a downvote button that does the opposite of what the upvote button does
+* Create upvote and downvote methods in the Topic model and use those in the topics controller instead directly modifying the topics votes
 * Sort topics by their number of votes
 * Add an 'about' page, linked from the bottom of the Suggestotron topics list. Link back to the Topics list from the About page so users don't get stranded.
 * If your class has a **lot** of time left over:
@@ -19,12 +22,13 @@ MARKDOWN
 h1 "Authors"
 
 ul do
-  li "Sarah Allen"
-  li "Sarah Mei"
-  li "Alex Chaffee"
-  li "Ryan Davis"
-  li "Steven! Ragnarok"
-  li "...and many, many others"
+  li do
+    a "The RailsBridge community", href: "https://github.com/railsbridge/docs/graphs/contributors"
+  end
+  li do
+    span "...and maybe you? Pull requests welcome "
+    a "on GitHub", href: "https://github.com/railsbridge/docs"
+  end
 end
 
 h1 "What next?"

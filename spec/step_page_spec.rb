@@ -1,8 +1,11 @@
 require "spec_helper"
-
+require "site"
 require "step_page"
 
 describe StepPage do
+  before do
+    setup_test_translations
+  end
 
   # functional test -- brittle
   it "renders a step file" do
@@ -14,7 +17,7 @@ describe StepPage do
       page_name: 'hello',
       doc_title: "Hello",
       doc_path: "/tmp/hello.step",
-      locale: "en",
+      locale: "en"
     )
 
     # this is a hack to make the TOC work in the absence of a real site
@@ -29,8 +32,8 @@ describe StepPage do
         <h1 class="doc_title">Hello</h1>
         <div class="doc">
           <a name="step1"></a>
-          <div class="step" title="hello">
-            <h1>#{checkbox_html}<span class="prefix">#{ I18n.t 'step' } 1: </span>hello</h1>
+          <div class="step">
+            <h1>#{checkbox_html}<span class="prefix">Step 1: </span>hello</h1>
           </div>
         </div>
       </main>
@@ -39,3 +42,4 @@ describe StepPage do
   end
 
 end
+

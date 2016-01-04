@@ -32,7 +32,7 @@ class Contents < Erector::Widget
   end
 
   def content_for filename
-    open("#{site_dir}/#{filename}").read()
+    open("#{site_dir}/#{filename}").read
   end
 
   def subpages_for filename
@@ -41,24 +41,24 @@ class Contents < Erector::Widget
     content = content_for(filename)
 
     # (markdown) links of the form: [link text](link_page)
-    content.scan /\[.*?\]\((.*?)\)/ do |link, _|
+    # but NOT images of the form ![alt text](image_link.jpg)
+    content.scan /[^!]\[.*?\]\((.*?)\)/ do |link, _|
       next if (link =~ /^http/)
       next if (link =~ %r(^//)) # protocol-less absolute links e.g. //google.com
-      next if (link =~ /(jpg|png)$/)
-      links.push(link) unless links.include? link
+      links.push(link)
     end
 
     # (stepfiles) links of the form: link "next page"
     content.scan /link\s*["'](.*?)["']/ do |link, _|
-      links.push(link) if !links.include? link
+      links.push(link)
     end
 
     # (stepfiles) links of the form: site_desc "some site"
     content.scan /site_desc\s*["'](.*?)["']/ do |link, _|
-      links.push('/' + link) if !links.include? link
+      links.push('/' + link)
     end
 
-    links
+    links.uniq
   end
 
   def next_step_for filename
@@ -228,7 +228,7 @@ class Contents < Erector::Widget
       toc_list(mark_open_and_closed(hierarchy)[:items])
 
       unless orphans.empty?
-        h1 "#{ I18n.t 'other_pages' }"
+        h1 I18n.t("general.other_pages")
         ul do
           orphans.each { |orphan| toc_link orphan }
         end
@@ -237,7 +237,7 @@ class Contents < Erector::Widget
       if has_collapsables(hierarchy)
         span class: "expand-all" do
           i class: "fa fa-arrows-alt"
-          text "#{ I18n.t 'expand_all' }"
+          text I18n.t("general.expand_all")
         end
       end
     end

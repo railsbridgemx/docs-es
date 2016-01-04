@@ -1,4 +1,4 @@
-# The Railsbridge Documentation Project
+# The RailsBridge Documentation Project
 
 [![Build Status](https://travis-ci.org/railsbridge/docs.png)](https://travis-ci.org/railsbridge/docs)
 
@@ -20,7 +20,7 @@ These files can be in any of these formats:
 ## Usage
 
     bundle install
-    rake run
+    bundle exec rake run
 
 If the above fails (say, because `rerun` doesn't work on your system), try
 
@@ -30,12 +30,35 @@ Then open <http://localhost:9292> in a web browser, and verify that you can navi
 
 ## Locales
 
-To serve sites from "sites/en", use `rake run` or a vanilla deploy.
+To serve sites from "sites/en", use `bundle exec rake run` or a vanilla deploy.
 
 To server sites from another locale (say, "es" or Spanish)...
-  * Locally, use the SITE_LOCALE environment variable: `SITE_LOCALE=es rake run`
-  * On a server, make the server respond to a locale subdomain: `http://es.railsbridge.org`
-  * Or to temporarily test, use a `locale` or `l` parameter: `http://docs.railsbridge.org/?l=es` (note that in this mode, links are not rewritten, so if they fail you will have to manually add the parameter again)
+
+### Run Localized Site Locally
+
+    $ SITE_LOCALE=es bundle exec rake run
+
+The server listens on `0.0.0.0:9292`.
+
+Now you have to set up subdomain mappings for the site. If you have Pow, run:
+
+    $ echo 9292 > ~/.pow/railsbridge # works for any subdomain
+
+If you don't have Pow, add the following line to `/etc/hosts`:
+
+    127.0.0.1 es.railsbridge.dev # works for single subdomain
+
+Now you can access `http://es.railsbridge.dev:9292` for debugging.
+
+### Running on a Server
+
+Just make sure the server responds to a locale subdomain: `http://es.railsbridge.org`
+
+### Temporary Testing
+
+Use a `locale` or `l` parameter: `http://docs.railsbridge.org/?l=es`.
+
+Note that in this mode, links are not rewritten, so if they fail you will have to manually add the parameter again.
 
 ## Contributing
 
@@ -49,6 +72,6 @@ The code is licensed under an [MIT license](http://opensource.org/licenses/MIT),
 
 ## Other Resources
 
-- Workship Organizers see [WORKSHOP.md](WORKSHOP.md)
 - [StepFile Reference](step_file_reference.md)
+- Workshop organizers: See http://docs.railsbridge.org/workshop for example slide decks you can use in your opening/closing presentations.
 
